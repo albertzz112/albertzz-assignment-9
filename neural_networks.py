@@ -9,11 +9,7 @@ from matplotlib.patches import Circle
 result_dir = "results"
 os.makedirs(result_dir, exist_ok=True)
 
-def softmax(x):
-    """Compute softmax for each row in x."""
-    exp_x = np.exp(x - np.max(x, axis=1, keepdims=True))  # for numerical stability
-    return exp_x / np.sum(exp_x, axis=1, keepdims=True)
-
+# Define a simple MLP class
 class MLP:
     def __init__(self, input_dim, hidden_dim, output_dim, lr, activation='tanh'):
         np.random.seed(0)
@@ -22,7 +18,7 @@ class MLP:
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
         self.output_dim = output_dim
-        # Initialize weights and biases
+        # Initialize layers
         self.W1 = np.random.randn(input_dim, hidden_dim)
         self.b1 = np.zeros(hidden_dim)
         self.W2 = np.random.randn(hidden_dim, output_dim)
@@ -31,28 +27,25 @@ class MLP:
         self.gradients = {'W1': [], 'b1': [], 'W2': [], 'b2': []}
 
     def forward(self, X):
-        """Forward pass through the network."""
+        """Perform the forward pass."""
         self.hidden = np.dot(X, self.W1) + self.b1
-        self.hidden_activations = self._activate(self.hidden)  # Store activations
-        logits = np.dot(self.hidden_activations, self.W2) + self.b2
-        self.output = softmax(logits)  # Apply softmax to logits
+        self.hidden_activations = self._activate(self.hidden)  # store activations for visualization
+        out = np.dot(self.hidden_activations, self.W2) + self.b2
+        self.output = self._sigmoid(out)  # Apply sigmoid activation for binary classification
         return self.output
 
     def backward(self, X, y):
-        """Backward pass using cross-entropy loss."""
+        """Compute gradients and update weights using cross-entropy loss."""
         m = X.shape[0]
-        y_pred = self.forward(X)
-        
-        # Compute gradient of cross-entropy loss with softmax
-        output_error = (y_pred - y) / m  # Gradient of cross-entropy loss
+        output_error = self.output - y  # Cross-entropy derivative
         hidden_error = np.dot(output_error, self.W2.T) * self._activate_derivative(self.hidden)
 
-        grad_W2 = np.dot(self.hidden_activations.T, output_error)
-        grad_b2 = np.sum(output_error, axis=0)
-        grad_W1 = np.dot(X.T, hidden_error)
-        grad_b1 = np.sum(hidden_error, axis=0)
+        grad_W2 = np.dot(self.hidden_activations.T, output_error) / m
+        grad_b2 = np.sum(output_error, axis=0) / m
+        grad_W1 = np.dot(X.T, hidden_error) / m
+        grad_b1 = np.sum(hidden_error, axis=0) / m
 
-        # Update weights and biases
+        # Update weights with gradient descent
         self.W1 -= self.lr * grad_W1
         self.b1 -= self.lr * grad_b1
         self.W2 -= self.lr * grad_W2
@@ -86,6 +79,10 @@ class MLP:
             return sigmoid_x * (1 - sigmoid_x)
         else:
             raise ValueError(f"Unsupported activation function: {self.activation_fn}")
+
+    def _sigmoid(self, x):
+        """Sigmoid activation for binary classification."""
+        return 1 / (1 + np.exp(-x))
 
 def generate_data(n_samples=100):
     np.random.seed(0)
