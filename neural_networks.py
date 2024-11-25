@@ -6,11 +6,14 @@ import os
 from functools import partial
 from matplotlib.patches import Circle
 
-
 result_dir = "results"
 os.makedirs(result_dir, exist_ok=True)
 
-# Define a simple MLP class
+def softmax(x):
+    """Compute softmax for each row in x."""
+    exp_x = np.exp(x - np.max(x, axis=1, keepdims=True))  # for numerical stability
+    return exp_x / np.sum(exp_x, axis=1, keepdims=True)
+
 class MLP:
     def __init__(self, input_dim, hidden_dim, output_dim, lr, activation='tanh'):
         np.random.seed(0)
@@ -19,7 +22,7 @@ class MLP:
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
         self.output_dim = output_dim
-        # TODO: define layers and initialize weights
+        # Initialize weights and biases
         self.W1 = np.random.randn(input_dim, hidden_dim)
         self.b1 = np.zeros(hidden_dim)
         self.W2 = np.random.randn(hidden_dim, output_dim)
@@ -28,16 +31,20 @@ class MLP:
         self.gradients = {'W1': [], 'b1': [], 'W2': [], 'b2': []}
 
     def forward(self, X):
-        # TODO: forward pass, apply layers to input X
+        """Forward pass through the network."""
         self.hidden = np.dot(X, self.W1) + self.b1
-        self.hidden_activations = self._activate(self.hidden)  # store activations for visualization
-        out = np.dot(self.hidden_activations, self.W2) + self.b2
-        return out
+        self.hidden_activations = self._activate(self.hidden)  # Store activations
+        logits = np.dot(self.hidden_activations, self.W2) + self.b2
+        self.output = softmax(logits)  # Apply softmax to logits
+        return self.output
 
     def backward(self, X, y):
-        # TODO: compute gradients using chain rule
+        """Backward pass using cross-entropy loss."""
         m = X.shape[0]
-        output_error = (self.forward(X) - y) / m
+        y_pred = self.forward(X)
+        
+        # Compute gradient of cross-entropy loss with softmax
+        output_error = (y_pred - y) / m  # Gradient of cross-entropy loss
         hidden_error = np.dot(output_error, self.W2.T) * self._activate_derivative(self.hidden)
 
         grad_W2 = np.dot(self.hidden_activations.T, output_error)
@@ -45,13 +52,13 @@ class MLP:
         grad_W1 = np.dot(X.T, hidden_error)
         grad_b1 = np.sum(hidden_error, axis=0)
 
-        # TODO: update weights with gradient descent
+        # Update weights and biases
         self.W1 -= self.lr * grad_W1
         self.b1 -= self.lr * grad_b1
         self.W2 -= self.lr * grad_W2
         self.b2 -= self.lr * grad_b2
 
-        # TODO: store gradients for visualization
+        # Store gradients for visualization
         self.gradients['W1'] = grad_W1
         self.gradients['b1'] = grad_b1
         self.gradients['W2'] = grad_W2
