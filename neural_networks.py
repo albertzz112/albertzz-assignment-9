@@ -35,9 +35,13 @@ class MLP:
         return self.output
 
     def backward(self, X, y):
-        """Compute gradients and update weights using cross-entropy loss."""
+        """Compute gradients and update weights using binary cross-entropy loss."""
         m = X.shape[0]
-        output_error = self.output - y  # Cross-entropy derivative
+        
+        # Binary cross-entropy loss derivative: dL/dy = (y_pred - y) 
+        output_error = self.output - y
+        
+        # Compute gradients for each layer
         hidden_error = np.dot(output_error, self.W2.T) * self._activate_derivative(self.hidden)
 
         grad_W2 = np.dot(self.hidden_activations.T, output_error) / m
@@ -56,6 +60,7 @@ class MLP:
         self.gradients['b1'] = grad_b1
         self.gradients['W2'] = grad_W2
         self.gradients['b2'] = grad_b2
+
 
     def _activate(self, x):
         """Apply the selected activation function."""
