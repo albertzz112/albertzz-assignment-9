@@ -5,7 +5,7 @@ from matplotlib.animation import FuncAnimation
 import os
 from functools import partial
 from matplotlib.patches import Circle
-from mpl_toolkits.mplot3d import Axes3D
+
 
 result_dir = "results"
 os.makedirs(result_dir, exist_ok=True)
